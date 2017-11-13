@@ -1,11 +1,11 @@
-var math = require('mathjs');
+// var math = require('mathjs');
 // var sprintf = require('sprintf');
 
 var display = function(canvas, data) {
   var ctx = canvas.getContext("2d");
-  var canvasSize = math.min([canvas.width, canvas.height]);
+  var canvasSize = Math.min(canvas.width, canvas.height);
 
-  var imageSize = math.floor(math.sqrt(data.length));
+  var imageSize = Math.floor(Math.sqrt(data.length));
   var scale = canvasSize / imageSize;
 
   // reset canvas
@@ -14,13 +14,16 @@ var display = function(canvas, data) {
   ctx.save(); // save original canvas
 
   var lightness;
-  var lightnessScale = 255 / (math.max(data) - math.min(data));
+  var minData, maxData;
+  [minData,maxData] = getMinMax(data);
+
+  var lightnessScale = 255 / (maxData - minData);
   var style;
   for (var h = 0; h < imageSize; h++) {
     for (var w = 0; w < imageSize; w++) {
       ctx.beginPath();
       ctx.rect(w * scale, h * scale, scale, scale);
-      lightness = math.floor(data[w + h * imageSize] * lightnessScale);
+      lightness = Math.floor(data[w + h * imageSize] * lightnessScale);
       style = 'rgb(' + lightness + ', ' + lightness + ', ' + lightness + ')'
       ctx.fillStyle = style;
       ctx.fill();
@@ -31,14 +34,40 @@ var display = function(canvas, data) {
   ctx.restore();
 }
 
+function getMinMax(arr) {
+  let min = arr[0], max = arr[0];
+
+  for (let i = 1, len=arr.length; i < len; i++) {
+    let v = arr[i];
+    min = (v < min) ? v : min;
+    max = (v > max) ? v : max;
+  }
+
+  return [min, max];
+}
+
+function getMinMaxMean(arr) {
+  let min = arr[0], max = arr[0], sum = 0;
+  let len = arr.length;
+  for (let i = 1; i < len; i++) {
+    let v = arr[i];
+    min = (v < min) ? v : min;
+    max = (v > max) ? v : max;
+    sum += v;
+  }
+
+  return [min, max, mean/len];
+}
+
+
 var findLimits = function(minValue, maxValue) {
   var range = Math.abs(maxValue - minValue);
   if (maxValue >= 0 && minValue < 0) {
-    var rangeOrderPlus = Math.floor(math.log10(maxValue));
-    var rangeOrderMin = Math.floor(math.log10(Math.abs(minValue)));
-    var rangeOrder = math.max([rangeOrderPlus, rangeOrderMin]);
+    var rangeOrderPlus = Math.floor(Math.log10(maxValue));
+    var rangeOrderMin = Math.floor(Math.log10(Math.abs(minValue)));
+    var rangeOrder = Math.max(rangeOrderPlus, rangeOrderMin);
   } else {
-    var rangeOrder = Math.floor(math.log10(range));
+    var rangeOrder = Math.floor(Math.log10(range));
   }
   return {
     min: Math.floor(minValue / Math.pow(10, rangeOrder - 1)) * Math.pow(10, rangeOrder - 1),
@@ -47,7 +76,7 @@ var findLimits = function(minValue, maxValue) {
 }
 
 var findOptimum = function(range, maxTicks) {
-  var rangeOrder = Math.floor(math.log10(range));
+  var rangeOrder = Math.floor(Math.log10(range));
   var range = Math.ceil(range * Math.pow(10, (1 - rangeOrder)));
   var add = maxTicks;
   var rest, base;
@@ -316,7 +345,9 @@ var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth
   }
 
   if (type === 'bar') {
-    var range = math.max(xData) - math.min(xData);
+    var minXData, maxXData;
+    [minXData, maxXData] = getMinMax(xData);
+    var range = maxXData - minXData;
     var barSize = range / xData.length;
     var transparent = true;
   }
@@ -378,10 +409,13 @@ var hist = function(canvas, data, amount) {
 
   //var range = math.max(bins.value) - math.min(bins.value);
   //var barSize = range / bins.value.length;
-  var minX = math.min(bins.value); // - 1.5 * barSize;
-  var maxX = math.max(bins.value); // + 0.5 * barSize;
-  var minY = math.min(bins.frequency);
-  var maxY = math.max(bins.frequency);
+  var minX, maxX, minY, maxY;
+  [minX, maxX] = getMinMax(bins.value);
+  [minY, maxY] = getMinMax(bins.frequency);
+  // var minX = math.min(bins.value); // - 1.5 * barSize;
+  // var maxX = math.max(bins.value); // + 0.5 * barSize;
+  // var minY = math.min(bins.frequency);
+  // var maxY = math.max(bins.frequency);
 
   var handle = figure(canvas, "Value", "Frequency", minX, maxX, minY, maxY);
   plot(handle, bins.value, bins.frequency, 'stick', 'blue', [], 1, 1);
@@ -393,9 +427,11 @@ var hist = function(canvas, data, amount) {
   function binning(data, amount) {
     // TODO: check data is one dimensional array
     // TODO: check amount is integer
-    var offset = math.min(data);
-    var range = math.max(data) - offset;
-    var meanArithmetic = math.mean(data);
+    var offset, range, meanArithmetic;
+    [offset, range, meanArithmetic] = getMinMaxMean(data);
+    // var offset = math.min(data);
+    // var range = math.max(data) - offset;
+    // var meanArithmetic = math.mean(data);
     var meanGeometric = 0; // init
     var meanHarmonic = 0; // init
     var value = [];
@@ -405,7 +441,7 @@ var hist = function(canvas, data, amount) {
       throw "binning: number of bins cannot be less than 1";
     } else if (amount === 1) {
       value[0] = meanArithmetic;
-      frequency[0] = data._size[0];
+      frequency[0] = data.length;
     } else {
       var binSize = range / amount;
       var binMean = binSize / 2;
@@ -415,9 +451,9 @@ var hist = function(canvas, data, amount) {
       }
       var binSizeUp = range / (amount - 1); // we determine the bin with round
       var binIndex;
-      var dataSize = math.size(data);
+      var dataSize = data.length;
       for (var i = 0; i < dataSize; i++) {
-        meanGeometric += math.log(data[i]);
+        meanGeometric += Math.log(data[i]);
         meanHarmonic += 1 / data[i];
         binIndex = Math.round((data[i] - offset) / binSizeUp);
         frequency[binIndex]++;
@@ -427,7 +463,7 @@ var hist = function(canvas, data, amount) {
       value: value,
       frequency: frequency,
       meanArithmetic: meanArithmetic,
-      meanGeometric: math.exp(meanGeometric / dataSize),
+      meanGeometric: Math.exp(meanGeometric / dataSize),
       meanHarmonic: dataSize / meanHarmonic
     };
   }
