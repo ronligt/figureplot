@@ -214,7 +214,7 @@ function figure (canvas, xLabel, yLabel, minX, maxX, minY, maxY) {
     scaleY: scaleY
   };
 
-  var ticksOnAxis = function(axis, maxLength) {
+  function ticksOnAxis(axis, maxLength) {
     var bigValue, tickDelta;
     if (axis === "x") {
       bigValue = Math.max(Math.abs(minX), Math.abs(maxX));
@@ -390,7 +390,7 @@ var hist = function(canvas, data, amount) {
   plot(handle, [bins.meanGeometric], [handle.maxY], 'stick', 'green', [], 1, 0);
   plot(handle, [bins.meanHarmonic], [handle.maxY], 'stick', 'red', [], 1, 0);
 
-  var binning = function(data, amount) {
+  function binning(data, amount) {
     // TODO: check data is one dimensional array
     // TODO: check amount is integer
     var offset = math.min(data);
