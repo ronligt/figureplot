@@ -1,0 +1,19 @@
+{
+  "name": "figureplot",
+  "version": "1.0.5",
+  "description": "Create data plots using simple Matlab-like commands",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "plot",
+    "figure"
+  ],
+  "author": "Ronald Ligteringen <r.ligteringen@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "mathjs": "^3.9.3",
+    "sprintf": "^0.1.5"
+  }
+}
