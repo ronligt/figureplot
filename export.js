@@ -1,5 +1,5 @@
 var fig = window.fig || {};
 
-fig = require('figureplot');
+fig = require('./figureplot');
 
 window.fig = fig;
