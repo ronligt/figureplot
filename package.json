@@ -2,7 +2,7 @@
   "name": "figureplot",
   "version": "1.0.5",
   "description": "Create data plots using simple Matlab-like commands",
-  "main": "index.js",
+  "main": "figureplot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
