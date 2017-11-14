@@ -6,6 +6,31 @@ fig = require('./figureplot');
 window.fig = fig;
 
 },{"./figureplot":2}],2:[function(require,module,exports){
+var getMinMax = function(arr) {
+  let min = arr[0], max = arr[0];
+
+  for (let i = 1, len=arr.length; i < len; i++) {
+    let v = arr[i];
+    min = (v < min) ? v : min;
+    max = (v > max) ? v : max;
+  }
+
+  return [min, max];
+}
+
+var getMinMaxMean = function(arr) {
+  let min = arr[0], max = arr[0], sum = 0;
+  let len = arr.length;
+  for (let i = 1; i < len; i++) {
+    let v = arr[i];
+    min = (v < min) ? v : min;
+    max = (v > max) ? v : max;
+    sum += v;
+  }
+
+  return [min, max, mean/len];
+}
+
 var display = function(canvas, data) {
   var ctx = canvas.getContext("2d");
   var canvasSize = Math.min(canvas.width, canvas.height);
@@ -37,31 +62,6 @@ var display = function(canvas, data) {
     }
   }
   ctx.restore();
-}
-
-function getMinMax(arr) {
-  let min = arr[0], max = arr[0];
-
-  for (let i = 1, len=arr.length; i < len; i++) {
-    let v = arr[i];
-    min = (v < min) ? v : min;
-    max = (v > max) ? v : max;
-  }
-
-  return [min, max];
-}
-
-function getMinMaxMean(arr) {
-  let min = arr[0], max = arr[0], sum = 0;
-  let len = arr.length;
-  for (let i = 1; i < len; i++) {
-    let v = arr[i];
-    min = (v < min) ? v : min;
-    max = (v > max) ? v : max;
-    sum += v;
-  }
-
-  return [min, max, mean/len];
 }
 
 var findLimits = function(minValue, maxValue) {
@@ -328,7 +328,7 @@ function figure (canvas, xLabel, yLabel, minX, maxX, minY, maxY) {
   }
 }
 
-var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth) {
+var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth, alpha) {
   var ctx = handle.ctx;
 
   ctx.save();
@@ -355,6 +355,8 @@ var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth
   }
 
   ctx.beginPath();
+  alpha = (alpha === undefined?1:alpha)
+  ctx.globalAlpha = alpha
   var xDataLength = xData.length;
   for (var i = 0; i < xDataLength; i++) {
     if (xData[i] >= handle.minX && xData[i] <= handle.maxX) {
@@ -363,7 +365,7 @@ var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth
           ctx.lineTo(xData[i] * handle.scaleX, yData[i] * handle.scaleY);
         } else if (type === 'dot') {
           ctx.beginPath();
-          ctx.arc(xData[i] * handle.scaleX, yData[i] * handle.scaleY, 4, 0, 2 * Math.PI);
+          ctx.arc(xData[i] * handle.scaleX, yData[i] * handle.scaleY, dotWidth, 0, 2 * Math.PI);
           ctx.stroke();
         }
         if (type === 'bar') {
@@ -371,10 +373,10 @@ var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth
           ctx.rect((xData[i] - barSize) * handle.scaleX, handle.minY * handle.scaleY,
           barSize * 1.125 * handle.scaleX, (yData[i] - handle.minY) * handle.scaleY);
           if (transparent) {
-            ctx.globalAlpha = 1;
+            ctx.globalAlpha = alpha;
             transparent = false;
           } else {
-            ctx.globalAlpha = 0.7;
+            ctx.globalAlpha = alpha - 0.3;
             transparent = true;
           }
           ctx.fill();
@@ -382,14 +384,14 @@ var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth
         if (type === 'stick') {
           ctx.beginPath();
           if (dotWidth > 0) {
-            ctx.globalAlpha = 0.2;
+            ctx.globalAlpha = alpha - 0.3;
           }
           ctx.moveTo(xData[i] * handle.scaleX, handle.minY * handle.scaleY);
           ctx.lineTo(xData[i] * handle.scaleX, yData[i] * handle.scaleY);
           ctx.stroke();
           if (dotWidth > 0) {
             ctx.beginPath();
-            ctx.globalAlpha = 1;
+            ctx.globalAlpha = alpha;
             ctx.arc(xData[i] * handle.scaleX, yData[i] * handle.scaleY, dotWidth, 0, 2 * Math.PI);
             ctx.fill();
             ctx.stroke();
@@ -403,6 +405,56 @@ var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth
   }
 
   ctx.restore();
+}
+
+var binning = function(data, amount) {
+  // TODO: check data is one dimensional array
+  // TODO: check amount is integer
+  var offset, max, range, meanArithmetic;
+  [offset, max, meanArithmetic] = getMinMaxMean(data);
+  range = max - offset
+  var meanGeometric = 0; // init
+  var meanHarmonic = 0; // init
+  var value = [];
+  var frequency = [];
+
+  if (amount < 1) {
+    throw "binning: number of bins cannot be less than 1";
+  } else if (amount === 1) {
+    value[0] = meanArithmetic;
+    frequency[0] = data.length;
+  } else {
+    var binSize = range / amount;
+    var binMean = binSize / 2;
+    var minValue, maxValue
+    for (var i = 0; i < amount; i++) { // fill the x values with the mean of each bin
+      value[i] = offset + binMean + binSize * i;
+      minValue = (minValue === undefined?value[i]:(value[i]<minValue?value[i]:minValue))
+      maxValue = (maxValue === undefined?value[i]:(value[i]>maxValue?value[i]:maxValue))
+      frequency[i] = 0; // initialise the counter
+    }
+    var binSizeUp = range / (amount - 1); // we determine the bin with round
+    var binIndex;
+    var dataSize = data.length;
+    var maxFrequency
+    for (var i = 0; i < dataSize; i++) {
+      meanGeometric += Math.log(data[i]);
+      meanHarmonic += 1 / data[i];
+      binIndex = Math.round((data[i] - offset) / binSizeUp);
+      frequency[binIndex]++;
+      maxFrequency = (maxFrequency === undefined?frequency[binIndex]:(frequency[binIndex] > maxFrequency?frequency[binIndex]:maxFrequency))
+    }
+  }
+  return {
+    minValue: minValue,
+    maxValue: maxValue,
+    value: value,
+    maxFrequency: maxFrequency,
+    frequency: frequency,
+    meanArithmetic: meanArithmetic,
+    meanGeometric: Math.exp(meanGeometric / dataSize),
+    meanHarmonic: dataSize / meanHarmonic
+  };
 }
 
 var hist = function(canvas, data, amount) {
@@ -419,53 +471,15 @@ var hist = function(canvas, data, amount) {
   plot(handle, [bins.meanArithmetic], [handle.maxY], 'stick', 'purple', [], 1, 0);
   plot(handle, [bins.meanGeometric], [handle.maxY], 'stick', 'green', [], 1, 0);
   plot(handle, [bins.meanHarmonic], [handle.maxY], 'stick', 'red', [], 1, 0);
-
-  function binning(data, amount) {
-    // TODO: check data is one dimensional array
-    // TODO: check amount is integer
-    var offset, range, meanArithmetic;
-    [offset, range, meanArithmetic] = getMinMaxMean(data);
-    var meanGeometric = 0; // init
-    var meanHarmonic = 0; // init
-    var value = [];
-    var frequency = [];
-
-    if (amount < 1) {
-      throw "binning: number of bins cannot be less than 1";
-    } else if (amount === 1) {
-      value[0] = meanArithmetic;
-      frequency[0] = data.length;
-    } else {
-      var binSize = range / amount;
-      var binMean = binSize / 2;
-      for (var i = 0; i < amount; i++) { // fill the x values with the mean of each bin
-        value[i] = offset + binMean + binSize * i;
-        frequency[i] = 0; // initialise the counter
-      }
-      var binSizeUp = range / (amount - 1); // we determine the bin with round
-      var binIndex;
-      var dataSize = data.length;
-      for (var i = 0; i < dataSize; i++) {
-        meanGeometric += Math.log(data[i]);
-        meanHarmonic += 1 / data[i];
-        binIndex = Math.round((data[i] - offset) / binSizeUp);
-        frequency[binIndex]++;
-      }
-    }
-    return {
-      value: value,
-      frequency: frequency,
-      meanArithmetic: meanArithmetic,
-      meanGeometric: Math.exp(meanGeometric / dataSize),
-      meanHarmonic: dataSize / meanHarmonic
-    };
-  }
 }
 
 module.exports = {
+  getMinMax: getMinMax,
+  getMinMaxMean: getMinMaxMean,
   display: display,
   figure: figure,
   plot: plot,
+  binning: binning,
   hist: hist
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "figureplot",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Create data plots using simple Matlab-like commands",
   "main": "figureplot.js",
   "scripts": {
