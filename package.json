@@ -1,6 +1,6 @@
 {
   "name": "figureplot",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "Create data plots using simple Matlab-like commands",
   "main": "figureplot.js",
   "scripts": {
@@ -12,8 +12,9 @@
   ],
   "author": "Ronald Ligteringen <r.ligteringen@gmail.com>",
   "license": "ISC",
-  "dependencies": {
-    "mathjs": "^3.9.3",
-    "sprintf": "^0.1.5"
+  "repository": "ronligt/figureplot",
+  "dependencies": {},
+  "devDependencies": {
+    "browserify": "^14.5.0"
   }
 }
