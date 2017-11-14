@@ -1,6 +1,3 @@
-// var math = require('mathjs');
-// var sprintf = require('sprintf');
-
 var display = function(canvas, data) {
   var ctx = canvas.getContext("2d");
   var canvasSize = Math.min(canvas.width, canvas.height);
@@ -58,7 +55,6 @@ function getMinMaxMean(arr) {
 
   return [min, max, mean/len];
 }
-
 
 var findLimits = function(minValue, maxValue) {
   var range = Math.abs(maxValue - minValue);
@@ -322,7 +318,6 @@ function figure (canvas, xLabel, yLabel, minX, maxX, minY, maxY) {
     }
     ctx.restore();
   }
-
 }
 
 var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth) {
@@ -334,7 +329,6 @@ var plot = function(handle, xData, yData, type, color, dash, lineWidth, dotWidth
   ctx.translate(handle.plotOriginColumn, handle.canvasHeight - handle.plotOriginRow);
   // set plotting to data values
   ctx.translate(-handle.minX * handle.scaleX, -handle.minY * handle.scaleY);
-
 
   ctx.lineWidth = lineWidth;
   ctx.strokeStyle = color;
@@ -407,15 +401,9 @@ var hist = function(canvas, data, amount) {
 
   var bins = binning(data, amount);
 
-  //var range = math.max(bins.value) - math.min(bins.value);
-  //var barSize = range / bins.value.length;
   var minX, maxX, minY, maxY;
-  [minX, maxX] = getMinMax(bins.value);
+  [minX, maxX] = getMinMax(bins.value); // - 1.5 * barSize; + 0.5 * barSize
   [minY, maxY] = getMinMax(bins.frequency);
-  // var minX = math.min(bins.value); // - 1.5 * barSize;
-  // var maxX = math.max(bins.value); // + 0.5 * barSize;
-  // var minY = math.min(bins.frequency);
-  // var maxY = math.max(bins.frequency);
 
   var handle = figure(canvas, "Value", "Frequency", minX, maxX, minY, maxY);
   plot(handle, bins.value, bins.frequency, 'stick', 'blue', [], 1, 1);
@@ -429,9 +417,6 @@ var hist = function(canvas, data, amount) {
     // TODO: check amount is integer
     var offset, range, meanArithmetic;
     [offset, range, meanArithmetic] = getMinMaxMean(data);
-    // var offset = math.min(data);
-    // var range = math.max(data) - offset;
-    // var meanArithmetic = math.mean(data);
     var meanGeometric = 0; // init
     var meanHarmonic = 0; // init
     var value = [];
